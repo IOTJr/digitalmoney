@@ -1,6 +1,7 @@
 "use server";
 
-import { dodoPayments, type SubscriptionTier } from "@/lib/dodo/payments";
+import { dodoPayments } from "@/lib/dodo/payments";
+import { PRICING_TIERS, type SubscriptionTier } from "@/lib/dodo/constants";
 import { createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -96,7 +97,7 @@ export async function createCheckoutSession(
       }
 
       // Record payment in history
-      const pricing = dodoPayments[tier];
+      const pricing = PRICING_TIERS[tier];
       await supabase
         .from("payment_history")
         .insert({
