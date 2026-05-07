@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trixie Subscription Platform
+
+A high-performance subscription platform with a "Pay-to-Register" workflow using Next.js 15, Supabase, and Dodo Payments.
+
+## Features
+
+- **Pay-to-Register Flow**: Users must complete payment before they can create an account
+- **Subscription Tiers**: Three tiers ($15, $30, $50/month) with different access levels
+- **Session Guards**: Automatic subscription verification on every page load
+- **Secure Storage**: Supabase Storage with signed URLs for media files
+- **Community Features**: Real-time chat, announcements, and shop area (coming soon)
+
+## Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), Tailwind CSS, Shadcn UI
+- **Backend/Database**: Supabase (PostgreSQL, Auth, Storage)
+- **Payments**: Dodo Payments API
+- **State Management**: React Query
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm or pnpm
+- Supabase account
+- Dodo Payments merchant account
+
+### Environment Variables
+
+Copy `.env.local.example` to `.env.local` and fill in your values:
+
+```env
+# Dodo Payments
+DODO_PAYMENTS_API_KEY=your_api_key
+DODO_PAYMENTS_WEBHOOK_SECRET=your_webhook_secret
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Database Setup
+
+1. Run the SQL migration in your Supabase project:
+   - Go to Supabase Dashboard > SQL Editor
+   - Copy the contents of `supabase/migrations/001_initial_schema.sql`
+   - Execute the migration
+
+2. Get your Supabase Service Role Key from:
+   - Project Settings > API > Service Role Key
+
+### Dodo Payments Webhook Setup
+
+Configure your Dodo Payments webhook to point to:
+```
+https://your-domain.com/api/webhooks/dodo
+```
+
+The webhook should send events with the `x-dodo-signature` header for signature verification.
+
+### Installation
+
+```bash
+npm install
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+├── app/                    # Next.js App Router pages
+│   ├── api/
+│   │   └── webhooks/dodo/  # Dodo webhook handler
+│   ├── register/           # Registration page with payment guard
+│   ├── pricing/            # Pricing page
+│   └── page.tsx            # Landing page
+├── components/
+│   ├── ui/                 # Shadcn UI components
+│   ├── pricing/            # Pricing cards component
+│   └── register/           # Registration form
+├── lib/
+│   ├── supabase/           # Supabase client utilities
+│   ├── dodo/               # Dodo Payments API client
+│   └── actions/            # Server actions
+├── supabase/
+│   └── migrations/         # Database migrations
+└── middleware.ts           # Auth & subscription guards
+```
 
-## Learn More
+## Subscription Tiers
 
-To learn more about Next.js, take a look at the following resources:
+| Tier | Price | Features |
+|------|-------|----------|
+| Basic | $15/mo | Access to basic content, Community discussion, Announcements |
+| Expanded | $30/mo | Everything in Basic + File downloads (PDF, ZIP), Extended content library |
+| Exclusive | $50/mo | Everything in Expanded + Video streaming, Shop access, Priority support |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Pay-to-Register Flow
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. User visits `/pricing` and selects a tier
+2. User enters email and clicks "Subscribe"
+3. Server creates a Dodo checkout session
+4. User completes payment on Dodo
+5. Dodo webhook creates a pending registration in the database
+6. User is redirected to `/register` to complete account setup
+7. After registration, the subscription is activated
 
-## Deploy on Vercel
+## Security
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Webhook signatures are verified using HMAC-SHA256
+- RLS policies protect all database tables
+- Service role key is only used server-side
+- Signed URLs for media storage prevent unauthorized access
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
