@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd trixie-app && npm run build",
+  "devCommand": "cd trixie-app && npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": "trixie-app/.next",
+  "rootDirectory": "trixie-app"
+}
