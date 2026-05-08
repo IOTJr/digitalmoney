@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { dodoPayments, type SubscriptionTier } from "@/lib/dodo/payments";
+import { dodoPayments } from "@/lib/dodo/payments";
+import { type SubscriptionTier } from "@/lib/dodo/constants";
 
 export async function POST(request: NextRequest) {
   try {

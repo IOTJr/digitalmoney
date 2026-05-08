@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PRICING_TIERS, type SubscriptionTier } from "@/lib/dodo/payments";
+import { PRICING_TIERS, type SubscriptionTier } from "@/lib/dodo/constants";
 import { createCheckoutSession } from "@/lib/actions/checkout";
 import { useState, useTransition } from "react";
 import { Check } from "lucide-react";
