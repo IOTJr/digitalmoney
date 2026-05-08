@@ -1,9 +1,8 @@
 "use server";
 
 import { dodoPayments } from "@/lib/dodo/payments";
-import { PRICING_TIERS, type SubscriptionTier } from "@/lib/dodo/constants";
+import { type SubscriptionTier } from "@/lib/dodo/constants";
 import { createAdminClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 
 export interface CheckoutResult {
   url?: string;
@@ -63,62 +62,15 @@ export async function createCheckoutSession(
       tier
     );
 
-    // For development/testing, we'll simulate the checkout flow
-    // In production, this would redirect to the actual Dodo checkout page
-    if (process.env.NODE_ENV === "development" || checkoutSession.checkout_url.includes("simulated")) {
-      // Simulate successful payment for development
-      // In a real scenario, this would be handled by the webhook after payment
-      
-      // Create pending registration directly for testing
-      const { error: insertError } = await supabase
-        .from("pending_registrations")
-        .insert({
-          email: email.toLowerCase(),
-          dodo_checkout_id: checkoutSession.checkout_id,
-          tier_level: tier,
-          is_completed: false,
-        });
-
-      if (insertError) {
-        // Check if it's a duplicate email error
-        if (insertError.code === "23505") {
-          // Update existing
-          await supabase
-            .from("pending_registrations")
-            .update({
-              dodo_checkout_id: checkoutSession.checkout_id,
-              tier_level: tier,
-              created_at: new Date().toISOString(),
-              expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            })
-            .eq("email", email.toLowerCase())
-            .eq("is_completed", false);
-        }
-      }
-
-      // Record payment in history
-      const pricing = PRICING_TIERS[tier];
-      await supabase
-        .from("payment_history")
-        .insert({
-          email: email.toLowerCase(),
-          dodo_checkout_id: checkoutSession.checkout_id,
-          amount: pricing.price,
-          currency: "USD",
-          status: "completed",
-          tier: tier,
-          metadata: { simulated: true },
-        });
-
-      // Redirect to register page
-      redirect(`/register?checkout_id=${checkoutSession.checkout_id}&email=${encodeURIComponent(email.toLowerCase())}`);
-    }
-
-    // Production: redirect to Dodo checkout
     return { url: checkoutSession.checkout_url };
   } catch (error) {
     console.error("Checkout error:", error);
-    return { error: "An error occurred while processing your request" };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "An error occurred while processing your request",
+    };
   }
 }
 
