@@ -1,11 +1,14 @@
 # Trixie Subscription Platform
 
-A high-performance subscription platform with a "Pay-to-Register" workflow using Next.js 15, Supabase, and Dodo Payments.
+A high-performance subscription platform with a "Pay-to-Register" workflow using Next.js 15, Supabase, Dodo Payments, and M-Pesa Daraja STK Push.
 
 ## Features
 
 - **Pay-to-Register Flow**: Users must complete payment before they can create an account
 - **Subscription Tiers**: Three tiers ($15, $30, $50/month) with different access levels
+- **Secure Checkout Page**: Users are redirected to `/checkout` to choose card or M-Pesa payment
+- **M-Pesa STK Push**: Daraja API integration for PIN approval on customer phones
+- **USD to KES Conversion**: Server-side currency conversion for M-Pesa charges in Kenyan Shillings
 - **Session Guards**: Automatic subscription verification on every page load
 - **Secure Storage**: Supabase Storage with signed URLs for media files
 - **Community Features**: Real-time chat, announcements, and shop area (coming soon)
@@ -14,7 +17,7 @@ A high-performance subscription platform with a "Pay-to-Register" workflow using
 
 - **Frontend**: Next.js 15 (App Router), Tailwind CSS, Shadcn UI
 - **Backend/Database**: Supabase (PostgreSQL, Auth, Storage)
-- **Payments**: Dodo Payments API
+- **Payments**: Dodo Payments API + M-Pesa Daraja API
 - **State Management**: React Query
 
 ## Getting Started
@@ -34,6 +37,18 @@ Copy `.env.local.example` to `.env.local` and fill in your values:
 # Dodo Payments
 DODO_PAYMENTS_API_KEY=your_api_key
 DODO_PAYMENTS_WEBHOOK_SECRET=your_webhook_secret
+
+# M-Pesa Daraja
+MPESA_ENV=sandbox
+MPESA_CONSUMER_KEY=your_daraja_consumer_key
+MPESA_CONSUMER_SECRET=your_daraja_consumer_secret
+MPESA_SHORTCODE=your_shortcode
+MPESA_PASSKEY=your_lipa_na_mpesa_passkey
+MPESA_CALLBACK_TOKEN=long_random_callback_token
+MPESA_TRANSACTION_TYPE=CustomerPayBillOnline
+
+# Optional fallback FX rate (used when live rate API is unavailable)
+STATIC_USD_TO_KES_RATE=130
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -62,6 +77,15 @@ https://your-domain.com/api/webhooks/dodo
 ```
 
 The webhook should send events with the `x-dodo-signature` header for signature verification.
+
+### M-Pesa Daraja Callback Setup
+
+Set your Daraja callback URL to:
+```
+https://your-domain.com/api/webhooks/mpesa?token=your_mpesa_callback_token
+```
+
+Use the same value for `your_mpesa_callback_token` as `MPESA_CALLBACK_TOKEN`.
 
 ### Installation
 
@@ -110,16 +134,20 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 ## Pay-to-Register Flow
 
 1. User visits `/pricing` and selects a tier
-2. User enters email and clicks "Subscribe"
-3. Server creates a Dodo checkout session
-4. User completes payment on Dodo
-5. Dodo webhook creates a pending registration in the database
-6. User is redirected to `/register` to complete account setup
-7. After registration, the subscription is activated
+2. User enters email and is redirected to `/checkout`
+3. User chooses payment method:
+   - Card: server creates a Dodo checkout session and redirects
+   - M-Pesa: server initiates Daraja STK Push in KES
+4. Payment provider webhook/callback records successful payment
+5. Pending registration is created in the database
+6. User opens `/register` with the paid email and creates account
+7. Subscription is activated after registration
 
 ## Security
 
 - Webhook signatures are verified using HMAC-SHA256
+- M-Pesa callback route requires a shared callback token
+- M-Pesa and Dodo secrets are kept server-side only
 - RLS policies protect all database tables
 - Service role key is only used server-side
 - Signed URLs for media storage prevent unauthorized access

@@ -14,8 +14,10 @@ export async function createCheckoutSession(
   tier: SubscriptionTier
 ): Promise<CheckoutResult> {
   try {
+    const normalizedEmail = email.toLowerCase();
+
     // Validate email
-    if (!email || !email.includes("@")) {
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
       return { error: "Please enter a valid email address" };
     }
 
@@ -26,13 +28,24 @@ export async function createCheckoutSession(
 
     // Check if user already has an active subscription
     const supabase = await createAdminClient();
-    
-    const { data: existingSubscription } = await supabase
-      .from("subscriptions")
-      .select("id, status")
-      .eq("email", email.toLowerCase())
-      .eq("status", "active")
-      .single();
+
+    const { data: existingProfile } = await supabase
+      .from("user_profiles")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+
+    let existingSubscription: { id: string } | null = null;
+    if (existingProfile?.id) {
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", existingProfile.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      existingSubscription = data;
+    }
 
     if (existingSubscription) {
       return { error: "You already have an active subscription" };
@@ -42,9 +55,9 @@ export async function createCheckoutSession(
     const { data: pendingRegistration } = await supabase
       .from("pending_registrations")
       .select("id, expires_at")
-      .eq("email", email.toLowerCase())
+      .eq("email", normalizedEmail)
       .eq("is_completed", false)
-      .single();
+      .maybeSingle();
 
     if (pendingRegistration) {
       const expiresAt = new Date(pendingRegistration.expires_at);
@@ -58,7 +71,7 @@ export async function createCheckoutSession(
 
     // Create Dodo checkout session
     const checkoutSession = await dodoPayments.createCheckoutSession(
-      email.toLowerCase(),
+      normalizedEmail,
       tier
     );
 

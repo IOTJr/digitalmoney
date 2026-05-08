@@ -10,9 +10,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { PRICING_TIERS, type SubscriptionTier } from "@/lib/dodo/constants";
-import { createCheckoutSession } from "@/lib/actions/checkout";
 import { useState, useTransition } from "react";
 import { Check } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface PricingCardsProps {
   userEmail?: string;
@@ -23,6 +23,7 @@ export function PricingCards({ userEmail: initialEmail }: PricingCardsProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier | null>(null);
+  const router = useRouter();
 
   const handleSubscribe = (tier: SubscriptionTier) => {
     if (!email || !email.includes("@")) {
@@ -34,16 +35,9 @@ export function PricingCards({ userEmail: initialEmail }: PricingCardsProps) {
     setSelectedTier(tier);
     
     startTransition(async () => {
-      const result = await createCheckoutSession(email, tier);
-      
-      if (result.error) {
-        setError(result.error);
-        return;
-      }
-
-      if (result.url) {
-        window.location.href = result.url;
-      }
+      router.push(
+        `/checkout?tier=${tier}&email=${encodeURIComponent(email.toLowerCase())}`
+      );
     });
   };
 
